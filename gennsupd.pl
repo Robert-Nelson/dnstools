@@ -8,20 +8,22 @@ use Getopt::Long qw(:config gnu_getopt auto_help auto_version);
 use Pod::Usage;
 use Net::IP;
 
-our $VERSION = '0.9.0';
-my @ipv4;
+our $VERION = '0.9.0';
+my @ipv4;
 my @ipv6;
 my %revdomains;
 my @input;
 my @script;
 
-my $man;my $verbose = 0;my $ttl = '3600';
+my $man;
+my $verbose = 0;
+my $ttl = '3600';
 my $host;
 my $domain;
 my $ipinfo;
 my $net;
 my $output;
-my $doadd = 1;
+my $doadd = 1;
 my $dopurge = 1;
 my $doforward = 1;
 my $doreverse = 1;
@@ -43,15 +45,17 @@ my %opts = (
 	'reverse|r!' => \$doreverse,
 	'ttl|t=i' => \$ttl,
 	'verbose|v' => \$verbose,
-);
+);
 GetOptions(%opts);
 
-pod2usage(-exitval => 0, -verbose => 2) if $man;
+pod2usage(-exitval => 0, -verbose => 2) if $man;
 if (!$host) {
 	$host = `hostname -s`;
+	chomp $host;
 }		
-if (!$domain) {
+if (!$domain) {
 	$domain = `hostname -d`;
+	chomp $domain;
 }
 
 if ($ipinfo) {
@@ -63,11 +67,12 @@ if ($ipinfo) {
 		$net = 'eth0';
 	}
 	@input = `ip addr show $net`;
-}
-sub addrev($$) {
-	my ($addr, $zoneoffset) = @_;
+}
+
+sub addrev($$$) {
+	my ($addr, $expaddr, $zoneoffset) = @_;
 	  
-	my $rev = Net::IP::ip_reverse($addr);
+	my $rev = Net::IP::ip_reverse($expaddr);
 	my @revarray = split(/\./, $rev);
 	my $revdom = join('.', @revarray[$zoneoffset..$#revarray]);
 
@@ -77,7 +82,7 @@ sub addrev($$) {
 	
 	push @{$revdomains{$revdom}}, $rev;
 }
-my $addr;
+my $addr;
 my $subnet;
 
 foreach (@input) {
@@ -86,28 +91,28 @@ foreach (@input) {
 			$addr = $1;
 			$subnet = $3;
 			push @ipv4, $addr;
-			addrev($addr, 4-int($subnet/8));
+			addrev($addr, Net::IP::ip_expand_address($addr, 4), 4-int($subnet/8));
 		}
 	} elsif (m/\s+inet6\s+([[:xdigit:]:]+)\/(\d+).*scope global.*$/) {
 		if ($doipv6) {
 			$addr = $1;
 			$subnet = $2;
 			push @ipv6, $addr;
-			addrev($addr, 32-int($subnet/4));
+			addrev($addr, Net::IP::ip_expand_address($addr, 6), 32-int($subnet/4));
 		}
 	}
 }
-push @script, "zone $domain.";
+push @script, "zone $domain.";
 push @script, "ttl $ttl";
-if ($doforward) {
+if ($doforward) {
 	if ($dopurge) {
 		push @script, "update delete $host.$domain. A" if ($doipv4);
 		push @script, "update delete $host.$domain. AAAA" if ($doipv6);
 	}
 
-	if ($doadd) {		foreach $addr (@ipv4) {
+	if ($doadd) {		foreach $addr (@ipv4) {
 			push @script, "update add $host.$domain. A $addr";
-		}		foreach $addr (@ipv6) {
+		}		foreach $addr (@ipv6) {
 			push @script, "update add $host.$domain. AAAA $addr";
 		}
 	}
@@ -119,7 +124,8 @@ push @script, "ttl $ttl";
 if ($doreverse) {
 	foreach my $key (keys(%revdomains)) {
 		push @script, "zone $key.";
-		foreach $addr (@{$revdomains{$key}}) {			push @script, "update delete $addr PTR" if ($dopurge);
+		foreach $addr (@{$revdomains{$key}}) {
+			push @script, "update delete $addr PTR" if ($dopurge);
 			push @script, "update add $addr PTR $host.$domain." if ($doadd);
 		}
 		push @script, "send";
@@ -241,7 +247,7 @@ Generate reverse DNS entries, since this is the default it is only useful when p
 
 =item B<--ttl=n>
 
-The TimeToLive for added DNS entries in seconds. The default is 3600 or one hour.
+The TimeToLive for added DNS entries in seconds. The default is 3600 or one hour.
 
 =item B<--verbose>
 
