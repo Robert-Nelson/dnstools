@@ -18,6 +18,7 @@ my @script;
 my $man;
 my $verbose = 0;
 my $ttl = '3600';
+my $server;
 my $host;
 my $domain;
 my $ipinfo;
@@ -43,6 +44,7 @@ my %opts = (
 	'output|o=s' => \$output,
 	'purge|p!' => \$dopurge,
 	'reverse|r!' => \$doreverse,
+	'server|s=s' => \$server,
 	'ttl|t=i' => \$ttl,
 	'verbose|v' => \$verbose,
 );
@@ -71,7 +73,7 @@ if ($ipinfo) {
 
 sub addrev($$$) {
 	my ($addr, $expaddr, $zoneoffset) = @_;
-	  
+
 	my $rev = Net::IP::ip_reverse($expaddr);
 	my @revarray = split(/\./, $rev);
 	my $revdom = join('.', @revarray[$zoneoffset..$#revarray]);
@@ -97,10 +99,16 @@ foreach (@input) {
 		if ($doipv6) {
 			$addr = $1;
 			$subnet = $2;
+			if ($subnet > 64) {
+				$subnet = 64;
+			}
 			push @ipv6, $addr;
 			addrev($addr, Net::IP::ip_expand_address($addr, 6), 32-int($subnet/4));
 		}
 	}
+}
+if ($server) {
+	push @script, "server $server.";
 }
 push @script, "zone $domain.";
 push @script, "ttl $ttl";
@@ -168,6 +176,7 @@ Options:
 	-o	--output=s	write script to named file (default stdout)
 	-p	--(no)purge	(don't) generate delete statements
 	-r	--(no)reverse	(don't) generate reverse DNS entries
+	-s	--server=s	DNS server to update
 	-t	--ttl=n		time to live in seconds (default 3600)
 	-v	--verbose	print verbose diagnostics
 
@@ -243,6 +252,13 @@ Generates delete statements, since this is the default it is only useful when pr
 =item B<--(no)reverse>
 
 Generate reverse DNS entries, since this is the default it is only useful when prefixed with no (eg --noreverse).
+
+
+=item B<--server=s>
+
+The DNS server to be updated. Normally this doesn't need to be specified, nsupdate uses the primary server for
+the domain.  But some versions are buggy and try to send the updates to the default name server in resolv.conf 
+resulting in a FORMERR.
 
 
 =item B<--ttl=n>
