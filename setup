@@ -1,0 +1,26 @@
+#!/bin/sh
+SCRIPTS="adauth gennsupd.pl nm-adupdate"
+SCRIPT_DIR=/usr/local/sbin
+
+TEMP=`getopt -o ir --long install,remove -- "$@"`
+
+if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
+
+# Note the quotes around `$TEMP': they are essential!
+eval set -- "$TEMP"
+
+while true ; do
+	case "$1" in
+		-i|--install)	install -o root -g root -m 0700 $SCRIPTS $SCRIPT_DIR
+				ln -sf $SCRIPT_DIR/nm-adupdate /etc/NetworkManager/dispatcher.d/40-nm-adupdate
+				ln -sf $SCRIPT_DIR/nm-adupdate /etc/NetworkManager/dispatcher.d/pre-down.d/40-nm-adupdate
+				[ -e /etc/krb5.keytab ] || $SCRIPT_DIR/adauth -c
+				shift ;;
+		-r|--remove)	for file in $SCRIPTS; do rm -f $SCRIPT_DIR/$file; done
+				rm /etc/NetworkManager/dispatcher.d/40-nm-adupdate
+				rm /etc/NetworkManager/dispatcher.d/pre-down.d/40-nm-adupdate
+				shift ;;
+		--) break ;;
+		*) echo "Internal error!" ; exit 1 ;;
+	esac
+done

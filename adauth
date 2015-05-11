@@ -1,0 +1,31 @@
+#!/bin/bash
+MACHINE_ACCT=`hostname -s`\$
+MACHINE_DOMAIN=`hostname -d`
+MACHINE_REALM=${MACHINE_DOMAIN^^?}
+
+TEMP=`getopt -o cid --long config,init,destroy -- "$@"`
+
+function configure() {
+	MACHINE_PSWD=`tdbdump /var/lib/samba/private/secrets.tdb | sed -ne '/SECRETS\/MACHINE_PASSWORD\//{;n;s/data.*"\(.*\)\\\00"$/\1/gp;}'`
+	ktutil <<EOD
+add_entry -password -p $MACHINE_ACCT@$MACHINE_REALM -k 1 -e RC4-HMAC
+$MACHINE_PSWD
+write_kt /etc/krb5.keytab
+quit
+EOD
+}
+
+if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
+
+# Note the quotes around `$TEMP': they are essential!
+eval set -- "$TEMP"
+
+while true ; do
+	case "$1" in
+		-c|--config) configure ; shift ;;
+		-i|--init) kinit -k $MACHINE_ACCT@$MACHINE_REALM; shift ;;
+		-d|--destroy) kdestroy ; shift ;;
+		--) break ;;
+		*) echo "Internal error!" ; exit 1 ;;
+	esac
+done

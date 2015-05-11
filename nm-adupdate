@@ -1,0 +1,26 @@
+#!/bin/sh
+
+IFACE=$1
+ACTION=$2
+
+SCRIPT_DIR=/usr/local/sbin
+DNS_SERVER=`nslookup -type=SOA nelson-morfa.org|sed -ne 's/.*origin = \(.*\)/\1/p'`
+
+case "$ACTION" in
+pre-down)	$SCRIPT_DIR/adauth -i
+		$SCRIPT_DIR/gennsupd.pl -s $DNS_SERVER --noadd | nsupdate -g
+		$SCRIPT_DIR/adauth -d
+		;;
+up)		$SCRIPT_DIR/adauth -i
+		$SCRIPT_DIR/gennsupd.pl -s $DNS_SERVER | nsupdate -g
+		$SCRIPT_DIR/adauth -d
+		;;
+dhcp4-change)	$SCRIPT_DIR/adauth -i
+		$SCRIPT_DIR/gennsupd.pl --noipv6 --nopurge -s $DNS_SERVER | nsupdate -g
+		$SCRIPT_DIR/adauth -d
+		;;
+dhcp6-change)	$SCRIPT_DIR/adauth -i
+		$SCRIPT_DIR/gennsupd.pl --noipv4 --nopurge -s $DNS_SERVER | nsupdate -g
+		$SCRIPT_DIR/adauth -d
+		;;
+esac
