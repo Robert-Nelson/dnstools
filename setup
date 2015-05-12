@@ -1,5 +1,5 @@
 #!/bin/sh
-SCRIPTS="adauth gennsupd.pl nm-adupdate"
+SCRIPTS="adauth gennsupd.pl"
 SCRIPT_DIR=/usr/local/sbin
 
 TEMP=`getopt -o ir --long install,remove -- "$@"`
@@ -12,8 +12,9 @@ eval set -- "$TEMP"
 while true ; do
 	case "$1" in
 		-i|--install)	install -o root -g root -m 0700 $SCRIPTS $SCRIPT_DIR
-				install -o root -g root -m 0700 $SCRIPT_DIR/nm-adupdate /etc/NetworkManager/dispatcher.d/40-nm-adupdate
-				install -o root -g root -m 0700 $SCRIPT_DIR/nm-adupdate /etc/NetworkManager/dispatcher.d/pre-down.d/40-nm-adupdate
+				install -o root -g root -m 0700 nm-adupdate /etc/NetworkManager/dispatcher.d/40-nm-adupdate
+				install -o root -g root -m 0700 nm-adupdate /etc/NetworkManager/dispatcher.d/pre-down.d/40-nm-adupdate
+				[ -e /etc/sysconfig/adupdate ] || install -o root -g root -m 0744 adupdate.sysconfig /etc/sysconfig/adupdate
 				[ -e /etc/krb5.keytab ] || $SCRIPT_DIR/adauth -c
 				shift ;;
 		-r|--remove)	for file in $SCRIPTS; do rm -f $SCRIPT_DIR/$file; done

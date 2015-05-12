@@ -1,28 +1,31 @@
-#!/bin/sh
+#!/bin/bash
 
 IFACE=$1
 ACTION=$2
 
-PUBLIC_IFACE=eth0
-if [ "$IFACE" == "$PUBLIC_IFACE" ]; then
-	SCRIPT_DIR=/usr/local/sbin
-	DNS_SERVER=`nslookup -type=SOA nelson-morfa.org|sed -ne 's/.*origin = \(.*\)/\1/p'`
+[ -e /etc/sysconfig/adupdate ] && . /etc/sysconfig/adupdate
+
+if [ "$IFACE" == "${PUBLIC_IFACE:-eth0}" ]; then
+	SCRIPT_DIR="/usr/local/sbin"
+	if [ -n "$DC_SERVER" -a "$DC_SERVER" == "lookup" ]; then
+		DC_SERVER=`nslookup -type=SOA ${DOMAIN:-$(hostname -d)}|sed -ne 's/.*origin = \(.*\)/\1/p'`
+	fi
 
 	case "$ACTION" in
 	pre-down)	$SCRIPT_DIR/adauth -i
-			$SCRIPT_DIR/gennsupd.pl -s $DNS_SERVER -n $IFACE --noadd | nsupdate -g
+			$SCRIPT_DIR/gennsupd.pl ${DC_SERVER:+--server=}$DC_SERVER -n $IFACE ${HOST:+--host=}$HOST ${DOMAIN:+--domain=}$DOMAIN --noadd | nsupdate -g
 			$SCRIPT_DIR/adauth -d
 			;;
 	up)		$SCRIPT_DIR/adauth -i
-			$SCRIPT_DIR/gennsupd.pl -s $DNS_SERVER -n $IFACE | nsupdate -g
+			$SCRIPT_DIR/gennsupd.pl ${DC_SERVER:+--server=}$DC_SERVER -n $IFACE ${HOST:+--host=}$HOST ${DOMAIN:+--domain=}$DOMAIN ${ALIASES:+--cname=}$ALIASES | nsupdate -g
 			$SCRIPT_DIR/adauth -d
 			;;
 	dhcp4-change)	$SCRIPT_DIR/adauth -i
-			$SCRIPT_DIR/gennsupd.pl -s $DNS_SERVER -n $IFACE --noipv6 --nopurge | nsupdate -g
+			$SCRIPT_DIR/gennsupd.pl ${DC_SERVER:+--server=}$DC_SERVER -n $IFACE ${HOST:+--host=}$HOST ${DOMAIN:+--domain=}$DOMAIN --noipv6 --nopurge | nsupdate -g
 			$SCRIPT_DIR/adauth -d
 			;;
 	dhcp6-change)	$SCRIPT_DIR/adauth -i
-			$SCRIPT_DIR/gennsupd.pl -s $DNS_SERVER -n $IFACE --noipv4 --nopurge | nsupdate -g
+			$SCRIPT_DIR/gennsupd.pl ${DC_SERVER:+--server=}$DC_SERVER -n $IFACE ${HOST:+--host=}$HOST ${DOMAIN:+--domain=}$DOMAIN --noipv4 --nopurge | nsupdate -g
 			$SCRIPT_DIR/adauth -d
 			;;
 	esac

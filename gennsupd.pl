@@ -30,9 +30,11 @@ my $doforward = 1;
 my $doreverse = 1;
 my $doipv4 = 1;
 my $doipv6 = 1;
+my @cnames;
 
 my %opts = (
 	'add|a!' => \$doadd,
+	'cname|c=s' => \@cnames,
 	'domain|d=s' => \$domain,
 	'forward|f!' => \$doforward,
 	'host|h=s' => \$host,
@@ -58,6 +60,9 @@ if (!$host) {
 if (!$domain) {
 	$domain = `hostname -d`;
 	chomp $domain;
+}
+if (@cnames) {
+	@cnames = split(/,/,join(',', @cnames));
 }
 
 if ($ipinfo) {
@@ -118,10 +123,15 @@ if ($doforward) {
 		push @script, "update delete $host.$domain. AAAA" if ($doipv6);
 	}
 
-	if ($doadd) {		foreach $addr (@ipv4) {
+	if ($doadd) {
+		foreach $addr (@ipv4) {
 			push @script, "update add $host.$domain. A $addr";
-		}		foreach $addr (@ipv6) {
+		}
+		foreach $addr (@ipv6) {
 			push @script, "update add $host.$domain. AAAA $addr";
+		}
+		foreach my $alias (@cnames) {
+			push @script, "update add $alias.$domain. CNAME $host.$domain.";
 		}
 	}
 
@@ -164,14 +174,15 @@ gennsupd [options]
 Options:
 
 	-?	--help       	brief help message
-	-m	--man           full documentation
+	-4	--(no)ipv4	(don't) generate IPv4 statements
+	-6	--(no)ipv6	(don't) generate IPv6 statements
 	-a	--(no)add	(don't) generate add statements
+	-c	--cname=s	alias name
 	-d	--domain=s	domain name (default hostname -d)
 	-f	--(no)forward	(don't) generate forward DNS entries	
 	-h	--host=s	host name (default hostname -s)
 	-i	--ipinfo=s	file containing output from 'ip addr show' (testing)
-	-4	--(no)ipv4	(don't) generate IPv4 statements
-	-6	--(no)ipv6	(don't) generate IPv6 statements
+	-m	--man           full documentation
 	-n	--net=s		network interface (default eth0) (not used if --ipinfo specified)
 	-o	--output=s	write script to named file (default stdout)
 	-p	--(no)purge	(don't) generate delete statements
@@ -199,6 +210,11 @@ Prints the manual page and exits.
 =item B<--(no)add>
 
 Generates add statements, since this is the default it is only useful when prefixed with no (eg --noadd).
+
+
+=item B<--cname=s>
+
+Specify an alias host name.  The option can be repeated or multiple names separated by commas may be specified.
 
 
 =item B<--domain=s>

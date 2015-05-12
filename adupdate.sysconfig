@@ -1,0 +1,12 @@
+# The primary network interface, the one used to determinew the IP addressses.
+#PUBLIC_IFACE=eth0
+# The Active Directory Domain Controller to be updated.  If lookup is specified then
+# the origin from the SOA is used. Since some versions of nsupdate just update the first 
+# name server listed in resolv.conf this may be required.
+#DC_SERVER=
+# The Host name, if not specified then hostname -s is used.
+#HOST=
+# The Domain name, if not specified then hostname -d is used.
+#DOMAIN=
+# Any additional alias names
+#ALIASES=
