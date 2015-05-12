@@ -6,7 +6,7 @@ use warnings;
 
 use Getopt::Long qw(:config gnu_getopt auto_help auto_version);
 use Pod::Usage;
-use Net::IP;
+use NetAddr::IP qw(:lower);
 
 our $VERION = '0.9.0';
 my @ipv4;
@@ -77,11 +77,25 @@ if ($ipinfo) {
 }
 
 sub addrev($$$) {
-	my ($addr, $expaddr, $zoneoffset) = @_;
+	my ($addr, $version, $subnet) = @_;
+	my $ipaddr = NetAddr::IP->new($addr);
+	my @revarray;
+	my $rev;
+	my $revdom;
 
-	my $rev = Net::IP::ip_reverse($expaddr);
-	my @revarray = split(/\./, $rev);
-	my $revdom = join('.', @revarray[$zoneoffset..$#revarray]);
+	if ($version == 4) {
+		@revarray = split(/\./, $ipaddr->addr());
+		@revarray = reverse @revarray;
+		$rev = join('.', @revarray).'.in-addr.arpa';
+		$revdom = join('.', @revarray[(4-int($subnet/8))..$#revarray]).'.in-addr.arpa';
+	} elsif ($version == 6) {
+		my $digits = $ipaddr->full();
+		$digits =~ s/://g;
+		@revarray = split(//, $digits);
+		@revarray = reverse @revarray;
+		$rev = join('.', @revarray).'.ip6.arpa';
+		$revdom = join('.', @revarray[(32-int($subnet/4))..$#revarray]).'.ip6.arpa';
+	}
 
 	if (!exists($revdomains{$revdom})) {
 		$revdomains{$revdom} = [];
@@ -98,7 +112,7 @@ foreach (@input) {
 			$addr = $1;
 			$subnet = $3;
 			push @ipv4, $addr;
-			addrev($addr, Net::IP::ip_expand_address($addr, 4), 4-int($subnet/8));
+			addrev($addr, 4, $subnet);
 		}
 	} elsif (m/\s+inet6\s+([[:xdigit:]:]+)\/(\d+).*scope global.*$/) {
 		if ($doipv6) {
@@ -108,7 +122,7 @@ foreach (@input) {
 				$subnet = 64;
 			}
 			push @ipv6, $addr;
-			addrev($addr, Net::IP::ip_expand_address($addr, 6), 32-int($subnet/4));
+			addrev($addr, 6, $subnet);
 		}
 	}
 }
