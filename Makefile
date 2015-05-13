@@ -17,3 +17,10 @@ install:
 	install -m 0700 -o root -g root nm-adupdate $(DESTDIR)$(SYSCONFDIR)/NetworkManager/dispatcher.d/pre-down.d/40-nm-adupdate
 	install -m 0755 -o root -g root -d $(DESTDIR)$(SYSCONFDIR)/sysconfig
 	install -m 0744 -o root -g root adupdate.sysconfig $(DESTDIR)$(SYSCONFDIR)/sysconfig/adupdate
+
+uninstall:
+	rm -f $(DESTDIR)$(SBINDIR)/adauth
+	rm -f $(DESTDIR)$(SBINDIR)/gennsupd.pl
+	rm -f $(DESTDIR)$(SYSCONFDIR)/NetworkManager/dispatcher.d/40-nm-adupdate
+	rm -f $(DESTDIR)$(SYSCONFDIR)/NetworkManager/dispatcher.d/pre-down.d/40-nm-adupdate
+	rm -f $(DESTDIR)$(SYSCONFDIR)/sysconfig/adupdate
