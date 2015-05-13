@@ -31,14 +31,14 @@ net ads join -U user-name
 
 Enter your password when prompted.
 
-Now that the macine is a member of the domain the kerberos keytab file must be
+Now that the machine is a member of the domain the Kerberos keytab file must be
 created:
 
 ```
 adauth --config
 ```
 
-The final step is configuring the update acripts.  In most cases the defaults
+The final step is configuring the update scripts.  In most cases the defaults
 are sufficient.  If not, there are some settings that can be changed in 
 /etc/sysconfig/adupdate.
 
