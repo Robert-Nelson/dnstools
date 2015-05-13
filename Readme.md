@@ -69,7 +69,7 @@ DOMAIN
 ------
 
 In most cases the Active Directory Domain and the machine's domain name 
-are the same and can be retrievewd using hostname -d.  If not, specify 
+are the same and can be retrieved using hostname -d.  If not, specify 
 the domain here.
 
 ALIASES
