@@ -1,5 +1,5 @@
 Name:		adupdate
-Version:	0.9.0
+Version:	0.9.1
 Release:	1%{?dist}
 BuildArch:	noarch
 Summary:	Active Directory Update
@@ -38,3 +38,6 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Wed May 13 2015 Robert Nelson <robertn@the-nelsons.org>
 - Initial version
+
+* Wed May 13 2015 Robert Nelson <robertn@the-nelsons.org>
+- Update script locations during install

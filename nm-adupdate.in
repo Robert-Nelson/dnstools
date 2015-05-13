@@ -1,0 +1,31 @@
+#!/bin/bash
+
+IFACE=$1
+ACTION=$2
+
+[ -e @SYSCONFDIR@/sysconfig/adupdate ] && . @SYSCONFDIR@/sysconfig/adupdate
+
+if [ "$IFACE" == "${PUBLIC_IFACE:-eth0}" ]; then
+	if [ -n "$DC_SERVER" -a "$DC_SERVER" == "lookup" ]; then
+		DC_SERVER=`nslookup -type=SOA ${DOMAIN:-$(hostname -d)}|sed -ne 's/.*origin = \(.*\)/\1/p'`
+	fi
+
+	case "$ACTION" in
+	pre-down)	@SBINDIR@/adauth -i
+			@SBINDIR@/gennsupd.pl ${DC_SERVER:+--server=}$DC_SERVER -n $IFACE ${HOST:+--host=}$HOST ${DOMAIN:+--domain=}$DOMAIN --noadd | nsupdate -g
+			@SBINDIR@/adauth -d
+			;;
+	up)		@SBINDIR@/adauth -i
+			@SBINDIR@/gennsupd.pl ${DC_SERVER:+--server=}$DC_SERVER -n $IFACE ${HOST:+--host=}$HOST ${DOMAIN:+--domain=}$DOMAIN ${ALIASES:+--cname=}$ALIASES | nsupdate -g
+			@SBINDIR@/adauth -d
+			;;
+	dhcp4-change)	@SBINDIR@/adauth -i
+			@SBINDIR@/gennsupd.pl ${DC_SERVER:+--server=}$DC_SERVER -n $IFACE ${HOST:+--host=}$HOST ${DOMAIN:+--domain=}$DOMAIN --noipv6 --nopurge | nsupdate -g
+			@SBINDIR@/adauth -d
+			;;
+	dhcp6-change)	@SBINDIR@/adauth -i
+			@SBINDIR@/gennsupd.pl ${DC_SERVER:+--server=}$DC_SERVER -n $IFACE ${HOST:+--host=}$HOST ${DOMAIN:+--domain=}$DOMAIN --noipv4 --nopurge | nsupdate -g
+			@SBINDIR@/adauth -d
+			;;
+	esac
+fi
