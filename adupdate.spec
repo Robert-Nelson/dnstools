@@ -6,7 +6,7 @@ Summary:	Active Directory Update
 
 License:	GPL
 URL:		https://github.com/open-sw/adupdate
-Source:		https://github.com/open-sw/adupdate/files/%{name}-%{version}.tar.bz2
+Source:		https://github.com/open-sw/adupdate/releases/download/v%{version}/%{name}-%{version}.tar.bz2
 
 Requires:	NetworkManager, samba-common, tdb-tools, krb5-workstation
 
