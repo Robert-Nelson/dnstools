@@ -1,4 +1,4 @@
-FILES=adauth adupdate.spec adupdate.sysconfig COPYING gennsupd.pl Makefile nm-adupdate Readme.md
+FILES=adauth adupdate.spec adupdate.sysconfig COPYING gennsupd.pl Makefile nm-adupdate.in Readme.md
 ARCHIVE_NAME:=$(shell rpm --qf "%{name}-%{version}" --specfile adupdate.spec)
 ARCHIVE_DIR:=/tmp/$(ARCHIVE_NAME)
 
@@ -10,6 +10,7 @@ dist:
 	rm -rf $(ARCHIVE_DIR)
 	
 install:
+	sed -e "s;@SBINDIR@;$(SBINDIR);g" -e "s;@SYSCONFDIR@;$(SYSCONFDIR);g" < nm-adupdate.in > nm-adupdate
 	install -m 0755 -o root -g root -d $(DESTDIR)$(SBINDIR)
 	install -m 0700 -o root -g root adauth gennsupd.pl $(DESTDIR)$(SBINDIR)
 	install -m 0755 -o root -g root -d $(DESTDIR)$(SYSCONFDIR)/NetworkManager/dispatcher.d/pre-down.d
